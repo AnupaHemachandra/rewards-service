@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: rewards-service
+  r2dbc:
+    # Used only when running the app outside tests.
+    # Easiest local run: `mvn spring-boot:test-run` (starts PostgreSQL in Docker for you).
+    url: r2dbc:postgresql://localhost:5432/rewards
+    username: rewards
+    password: rewards
+  sql:
+    init:
+      mode: always
+
+logging:
+  level:
+    com.example.rewards: INFO
