@@ -79,32 +79,34 @@ public class RedemptionService {
             String requestHash) {
         return accounts.findByIdForUpdate(accountKey)
                 .switchIfEmpty(Mono.error(new AccountNotFoundException(accountKey)))
-                .flatMap(account -> {
-                    if (account.balance() < request.points()) {
+                .flatMap(account -> idempotencyRecords.findByKey(idempotencyKey)
+                    .flatMap(record -> replayOrConflict(record, requestHash))
+                    .switchIfEmpty(Mono.defer(() -> {
+                        if (account.balance() < request.points()) {
                         return Mono.error(new InsufficientPointsException(
-                                accountKey, request.points(), account.balance()));
-                    }
+                            accountKey, request.points(), account.balance()));
+                        }
 
-                    return accounts.addPoints(accountKey, -request.points())
+                        return accounts.addPoints(accountKey, -request.points())
                             .flatMap(balanceAfter -> {
-                                Map<String, Object> response = Map.of(
-                                        "redemptionId", UUID.randomUUID().toString(),
-                                        "accountId", accountId,
-                                        "points", request.points(),
-                                        "rewardCode", request.rewardCode(),
-                                        "balanceAfter", balanceAfter);
+                            Map<String, Object> response = Map.of(
+                                "redemptionId", UUID.randomUUID().toString(),
+                                "accountId", accountId,
+                                "points", request.points(),
+                                "rewardCode", request.rewardCode(),
+                                "balanceAfter", balanceAfter);
 
-                                return transactions.recordRedemption(
-                                                accountKey, request.points(), idempotencyKey)
-                                        .then(idempotencyRecords.save(
-                                                idempotencyKey,
-                                                accountKey,
-                                                requestHash,
-                                                serialize(response),
-                                                201))
-                                        .thenReturn(response);
+                            return idempotencyRecords.save(
+                                    idempotencyKey,
+                                    accountKey,
+                                    requestHash,
+                                    serialize(response),
+                                    201)
+                                .then(transactions.recordRedemption(
+                                    accountKey, request.points(), idempotencyKey))
+                                .thenReturn(response);
                             });
-                });
+                    })));
     }
 
     private Mono<Map<String, Object>> replayOrConflict(IdempotencyRecord record, String requestHash) {
