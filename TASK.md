@@ -48,13 +48,16 @@ You can't ask us questions during the solo hour. Where this spec is silent, pick
 
 ## While you work (please do this)
 
-1. **Commit as you go.** The repo is already a git repo. Commit at each meaningful step (for example: plan, tests, implementation, fixes) with a short message. Don't squash.
+1. **Work in your fork, on a branch, and commit as you go.** Fork this repository, clone your fork, create a branch from `main` (for example `redemptions`) and push it early. Commit at each meaningful step (for example: plan, tests, implementation, fixes) with a short message. Don't squash.
 2. **Keep `NOTES.md` up to date** (template is in the repo). Short bullet points are fine:
    - your plan and the key decisions you made
    - how you used AI: which tool, what you asked it, where it was wrong and how you noticed
    - what you would do with more time
 3. If your AI tool can export the conversation, save it in `ai-log/` (optional, but helpful).
 
-## When we're back
+## Before we're back: open a pull request
 
-Leave the app compiling and `mvn test` runnable. We'll run your tests, run a few of our own, and then talk it through.
+Push your branch to your fork and open a pull request against `main` of this repository, as you would when contributing to any public project. We'll review it together.
+
+- Keep the description short: what you built, why it's safe when requests arrive at the same time, how you tested it, and what's left. `NOTES.md` can carry the detail.
+- Leave the app compiling and `mvn test` runnable. We'll check out your pull request, run your tests and a few of our own, and then talk it through.
