@@ -80,33 +80,33 @@ public class RedemptionService {
         return accounts.findByIdForUpdate(accountKey)
                 .switchIfEmpty(Mono.error(new AccountNotFoundException(accountKey)))
                 .flatMap(account -> idempotencyRecords.findByKey(idempotencyKey)
-                    .flatMap(record -> replayOrConflict(record, requestHash))
-                    .switchIfEmpty(Mono.defer(() -> {
-                        if (account.balance() < request.points()) {
-                        return Mono.error(new InsufficientPointsException(
-                            accountKey, request.points(), account.balance()));
-                        }
+                        .flatMap(record -> replayOrConflict(record, requestHash))
+                        .switchIfEmpty(Mono.defer(() -> {
+                            if (account.balance() < request.points()) {
+                                return Mono.error(new InsufficientPointsException(
+                                        accountKey, request.points(), account.balance()));
+                            }
 
-                        return accounts.addPoints(accountKey, -request.points())
-                            .flatMap(balanceAfter -> {
-                            Map<String, Object> response = Map.of(
-                                "redemptionId", UUID.randomUUID().toString(),
-                                "accountId", accountId,
-                                "points", request.points(),
-                                "rewardCode", request.rewardCode(),
-                                "balanceAfter", balanceAfter);
+                            return accounts.addPoints(accountKey, -request.points())
+                                    .flatMap(balanceAfter -> {
+                                        Map<String, Object> response = Map.of(
+                                                "redemptionId", UUID.randomUUID().toString(),
+                                                "accountId", accountId,
+                                                "points", request.points(),
+                                                "rewardCode", request.rewardCode(),
+                                                "balanceAfter", balanceAfter);
 
-                            return idempotencyRecords.save(
-                                    idempotencyKey,
-                                    accountKey,
-                                    requestHash,
-                                    serialize(response),
-                                    201)
-                                .then(transactions.recordRedemption(
-                                    accountKey, request.points(), idempotencyKey))
-                                .thenReturn(response);
-                            });
-                    })));
+                                        return idempotencyRecords.save(
+                                                        idempotencyKey,
+                                                        accountKey,
+                                                        requestHash,
+                                                        serialize(response),
+                                                        201)
+                                                .then(transactions.recordRedemption(
+                                                        accountKey, request.points(), idempotencyKey))
+                                                .thenReturn(response);
+                                    });
+                        })));
     }
 
     private Mono<Map<String, Object>> replayOrConflict(IdempotencyRecord record, String requestHash) {
@@ -134,7 +134,4 @@ public class RedemptionService {
             throw new IllegalStateException("SHA-256 is unavailable", exception);
         }
     }
-}
-
-record RedeemPointsRequest(long points, String rewardCode) {
 }
